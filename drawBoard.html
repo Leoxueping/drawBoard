@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>绘画工具</title>
+	<style type="text/css">
+		#pictureCanvas{
+			border: 1px solid #ccc;
+		}
+		.pictureCanvasDiv,.btnGroup{
+			width: 100%;
+			text-align: center;
+		}
+	</style>
+</head>
+<body>
+	<div class="pictureCanvasDiv">
+		<canvas id="pictureCanvas" height="500" width="800"></canvas>
+	</div>
+	<div class="btnGroup">
+		<button id="startPicture">开始绘画</button>
+		<button id="reBack" disabled="">撤销</button>
+		<button id="xiangPiCa" disabled>橡皮擦</button>
+		<button id="pen" disabled>画笔</button>
+		<input type="color" name="color" id="penColor" disabled>
+		画笔宽度:
+		<select id="penWidth" disabled></select>
+		宽笔画封顶形状:
+		<select id="penCloseTopStyle" disabled>
+			<option value="round">延长笔画宽度的一半半圆结束</option>
+			<option value="butt">矩形直接结束</option>
+			<option value="square">延长笔画宽度的一半矩形结束</option>
+		</select>
+	</div>
+</body>
+<script type="text/javascript">
+	window.onload = function () {
+		//加载画笔宽度单选框
+		for (var _i = 1; _i <= 20;_i++) {
+			var option = document.createElement("option");
+			option.innerText = _i;
+			document.getElementById("penWidth").appendChild(option);
+		}
+		for (var _a = 1; _a < 10;_a++) {
+			var _option = document.createElement("option");
+			_option.innerText = "0." + _a;
+			document.getElementById("penWidth").appendChild(_option);
+		}
+		var pictureArray = [];
+		//开始画画
+		document.getElementById("startPicture").onclick = function () {
+			//移除按钮的不可点状态
+			var disabled = document.getElementsByClassName("btnGroup")[0].children;
+			for (var _x = 0; _x < disabled.length; _x++) {
+				disabled[_x].removeAttribute("disabled");
+			}
+			if(!pictureArray.length){
+				document.getElementById("reBack").setAttribute("disabled","");//判断是否可撤销
+			}
+			this.setAttribute("disabled","");//开始绘画按钮禁用
+			var canvas = document.getElementById("pictureCanvas");
+			var c = canvas.getContext("2d");
+			var flag = true;//据此判断是否启用mousemove事件
+			c.lineCap = "round";//默认圆形封顶
+			document.getElementById("pen").onclick = function () {
+				c.restore();//恢复画布属性状态
+				canvas.style.cursor = "pointer";
+				//切换画笔形态
+			};
+			document.getElementById("penColor").onchange = function () {
+				c.strokeStyle = this.value;//画笔颜色
+			};
+			document.getElementById("penWidth").onchange = function () {
+				c.lineWidth = this.value;//画笔宽度
+			};
+			document.getElementById("penCloseTopStyle").onchange = function () {
+				c.lineCap = this.value;//画笔封顶形状
+			};
+			canvas.onmousedown = function (event) {
+				pictureArray.push(c.getImageData(0,0,canvas.width,canvas.height));//当前图案进栈
+				flag = true;
+				c.beginPath();
+				c.moveTo(event.clientX - canvas.getBoundingClientRect().left,event.clientY - canvas.getBoundingClientRect().top);
+				canvas.onmousemove = function (e) {
+					if (flag) {
+						c.lineTo(e.clientX - canvas.getBoundingClientRect().left,e.clientY - canvas.getBoundingClientRect().top);//路径
+						c.stroke();//勾勒
+					}
+					canvas.onmouseup = function () {
+						flag = false;
+						c.closePath();
+						if(pictureArray.length){
+							document.getElementById("reBack").removeAttribute("disabled");//判断是否可撤销
+						}
+					};
+				};
+			};
+			document.getElementById("xiangPiCa").onclick = function () {
+				c.save();//保存当前画布属性状态
+				c.globalCompositeOperation = "destination-out";//设置合成属性，使其可以擦除像素
+				c.globalAlpha = 1;//设置透明度
+				c.lineWidth = 10;//橡皮擦宽度
+				canvas.style.cursor = "crosshair";
+			};
+			document.getElementById("reBack").onclick = function () {
+				if(pictureArray.length){
+					c.putImageData(pictureArray.pop(),0,0);//出栈把图案放到画布上
+					if(!pictureArray.length){
+						document.getElementById("reBack").setAttribute("disabled","");//判断是否可撤销
+					}
+				}
+			};
+		};
+	};
+</script>
+</html>
